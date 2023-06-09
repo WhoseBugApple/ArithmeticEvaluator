@@ -1,49 +1,31 @@
-package arithmetric.dfs.dynamicstep;
+package arithmetric.dfs.standard.ver1;
 
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
-/*
-Some Terms
-    op -> operator
-    first    op    second -->-->--|
-    ------<---<---<---<---<-------|
-    |
-    first                       op  second
-
-    left       right
-    A          A's friend
-    (  () ()   )
-Say it's dynamic step because
-    * <p> ...        * 3 ++ ++ ++         + 1 * 1 * 1 * 1 * 1 * 1 * 1          + ... </p>
-                     step one             step two
-    the step one ends when meet op that equal or greater than * , 
-    however, 
-    the step two ends when meet op that equal or greater than + , 
-    the condition is different
-*/
-
 /**
  * <h1>Intent</h1>
- * <p>evaluate a String arithmetic expression, all number will be recognized as double</p>
+ * <p> evaluate a String arithmetic expression, all number will be recognized as double </p>
  *
- * <h1>Only for operators with 2 operand</h1>
- * <p> as title </p>
+ * <h1>What is dfs</h1>
+ * <p> 1*2 + 3*4*5 + 6*7 </p>
+ * <p> level 1, + operation, ()  + ()  + () </p>
+ * <p> level 2, * operation, 1*2, 3*4*5, 6*7 </p>
  *
  * @Author KORC 792715299@qq.com
  * @Date 2023/6/9
  */
-public class DynamicStepDFSArithmeticEvaluator {
+public class DFSArithmeticEvaluator {
     ParenthesisManager pm = new ParenthesisManager();
     Scanner scanner;
     ScannerUtils scannerUtils = new ScannerUtils();
     Operators ops = new Operators();
-    
+
     public double compute(String expression) {
         double computed = -1;
         try {
             scanner = new Scanner(scannerUtils.getSplitExpression(expression, ops, pm));
-            computed = getComputedBetweenParentheses(true);
+            computed = computeContentBetweenParentheses(true);
         } catch (RuntimeException e) {
             e.printStackTrace();
         } finally {
@@ -51,18 +33,7 @@ public class DynamicStepDFSArithmeticEvaluator {
         }
     }
 
-    // finished
-    // left     content          right, friend
-    // (   .......(..)........   )
-    // return computed content
-    //
-    //          |-----| -> hidden global parenthesis, used in global computation
-    // exp  ->  ( exp )
-    //
-    // maybe TODO
-    // ParenthesisManager.depth(),
-    // maybe I can use it to check parenthesis friendship?
-    private double getComputedBetweenParentheses(boolean isGlobalComputation) {
+    private double computeContentBetweenParentheses(boolean isGlobalComputation) {
         if (!isGlobalComputation) {
             // assert next is left parenthesis
             if (!scannerUtils.hasNextLeftParenthesis(scanner, pm))
@@ -71,16 +42,7 @@ public class DynamicStepDFSArithmeticEvaluator {
             pm.push();
         }
 
-        double first = getFirst();
-        while(true) {
-            // if no more computation, break
-            if (!hasMoreComputation(isGlobalComputation)) break;
-
-            // do next compute
-            char op = scannerUtils.nextOperator(scanner, ops);
-            double second = getSecond(op);
-            first = ops.primitiveComputation(first, second, op);
-        }
+        double ret = computeGELevel(ops.lowestOperatorLevel());
 
         if (!isGlobalComputation) {
             // assert next is right parenthesis
@@ -97,81 +59,57 @@ public class DynamicStepDFSArithmeticEvaluator {
             if (pm.depth() != 0)
                 throw new RuntimeException("missing " + pm.depth() + " trailing ) at the end of expression");
         }
-        return first;
+        return ret;
     }
 
-    // finished
-    // return the computed first of an independent expression
-    // first
-    // 1         + 2
-    // first
-    // (1+2)     + 3
-    private double getFirst() {
-        if (scannerUtils.hasNextParenthesis(scanner, pm)) {
-            char p = scannerUtils.peekParenthesis(scanner, pm);
-            if ( p == pm.getLeftParenthesis()) {
-                // next element is `(`
-                return getComputedBetweenParentheses(false);
-            } else {
-                // next element is `)`
-                throw new RuntimeException("unexpected right parenthesis");
+    
+    // TODO
+    //   support more operators, 
+    //   now this function only supports operators that with 2 operand, 
+    //     to make it flexible, 
+    //     write different codes for different level, 
+    //     one level, one function
+    // 
+    // any equal or higher level computation is computed
+    // example
+    //   compute equal or higher level comparing to *
+    //     ... + a * (..) / ++b * c + ... 
+    //     * / ++ (..) is computed, while + is not computed because it's a lower level
+    private double computeGELevel(int level) {
+        if (level > ops.highestOperatorLevel()) {
+            if (scannerUtils.hasNextParenthesis(scanner, pm)) {
+                if (scannerUtils.hasNextLeftParenthesis(scanner, pm))
+                    return computeContentBetweenParentheses(false);
+                else throw new RuntimeException("unexpected )");
             }
-        } else {
             return scannerUtils.nextDouble(scanner);
         }
-    }
 
-    // finished
-    // second, end when meet equal-or-lower-level op, or when meet ), ...
-    // |first|   op  |second|   meet
-    //    1      *      2^3      *     4
-    private double getSecond(char lastOp) {
-        double first = getFirst();
-        while(true) {
-            // if second end, break
-            if (secondEnd(lastOp)) break;
-
-            // do next compute
+        int higherLevel = level + 1;
+        double ret = computeGELevel(higherLevel);
+        while(continueComputation(level)) {
+            // assert the op's level is equal to current level
             char op = scannerUtils.nextOperator(scanner, ops);
-            double second = getSecond(op);
-            first = ops.primitiveComputation(first, second, op);
+            ret = ops.primitiveComputation(ret, op, computeGELevel(higherLevel));
         }
-        return first;
+        return ret;
     }
 
-    // finished
-    private boolean hasMoreComputation(boolean isGlobalComputation) {
-        // return scannerUtils.hasNextOperator(scanner, ops);
-        if (scannerUtils.hasNextOperator(scanner, ops)) return true;
-
-//        // check wrong exception
-//        if (isGlobalComputation) {
-//            // assert no more elements
-//            if (scannerUtils.hasNext(scanner)) throw new RuntimeException("unexpected element");
-//        } else {
-//            // asset next is `)`
-//            if (!scannerUtils.hasNextRightParenthesis(scanner, pm)) throw new RuntimeException("expect ), while not");
-//        }
-
-        return false;
-    }
-
-    private boolean secondEnd(char lastOp) {
-        if (!scannerUtils.hasNext(scanner)) return true;
-        // has sth
-        // () or op or number
+    private boolean continueComputation(int currentLevel) {
+        if (!scannerUtils.hasNext(scanner)) return false;
+        // has sth, maybe () num op
         if (scannerUtils.hasNextParenthesis(scanner, pm)) {
-            if (scannerUtils.hasNextRightParenthesis(scanner, pm)) return true;
-            // now it is (
-            throw new RuntimeException("unexpected (");
+            if (scannerUtils.hasNextRightParenthesis(scanner, pm)) return false;
+            else throw new RuntimeException("unexpected (");
         }
         // not ()
-        // op or number
-        if (!scannerUtils.hasNextOperator(scanner, ops))
-            throw new RuntimeException("expect operator between 2 numbers");
-        // it's op
-        char nextOp = scannerUtils.peekOperator(scanner, ops);
-        return ops.operatorLevel(nextOp) <= ops.operatorLevel(lastOp);
+        if (scannerUtils.hasNextOperator(scanner, ops)) {
+            char op = scannerUtils.peekOperator(scanner, ops);
+            return ops.operatorLevel(op) >= currentLevel;
+        }
+        // not op
+        // is num
+        throw new RuntimeException("unexpected number");
     }
 }
 
@@ -188,7 +126,7 @@ class Operators {
         return false;
     }
 
-    public double primitiveComputation(double n1, double n2, char op) {
+    public double primitiveComputation(double n1, char op, double n2) {
         double ret = 0;
         switch (op) {
             case '+':
@@ -207,6 +145,7 @@ class Operators {
         return ret;
     }
 
+    // [C++ Operator Precedence - cppreference](https://en.cppreference.com/w/cpp/language/operator_precedence)
     public int operatorLevel(char op) {
         int ret = -1;
         switch (op) {
@@ -220,6 +159,16 @@ class Operators {
                 break;
         }
         return ret;
+    }
+
+    // [C++ Operator Precedence - cppreference](https://en.cppreference.com/w/cpp/language/operator_precedence)
+    public int lowestOperatorLevel() {
+        return 1;
+    }
+
+    // [C++ Operator Precedence - cppreference](https://en.cppreference.com/w/cpp/language/operator_precedence)
+    public int highestOperatorLevel() {
+        return 17;
     }
 
     public Pattern regexp() {
@@ -404,7 +353,7 @@ class ArithmeticEvaluatorTest {
     double expected8 = (3*(5+2)*(10-7));
 
     public void test() {
-        DynamicStepDFSArithmeticEvaluator ae = new DynamicStepDFSArithmeticEvaluator();
+        DFSArithmeticEvaluator ae = new DFSArithmeticEvaluator();
 
         String test = test4;
         double expected = expected4;

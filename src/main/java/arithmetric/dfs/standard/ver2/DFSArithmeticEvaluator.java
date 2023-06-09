@@ -1,4 +1,4 @@
-package arithmetric.dfs.standard;
+package arithmetric.dfs.standard.ver2;
 
 import java.util.Scanner;
 import java.util.regex.Pattern;
@@ -11,8 +11,12 @@ import java.util.regex.Pattern;
  * <p> 1*2 + 3*4*5 + 6*7 </p>
  * <p> level 1, + operation, ()  + ()  + () </p>
  * <p> level 2, * operation, 1*2, 3*4*5, 6*7 </p>
+ *
+ * <h1>Changes to ver1</h1>
+ * <p> support negative operation </p>
+ *
  * @Author KORC 792715299@qq.com
- * @Date 2023/6/9
+ * @Date 2023/6/10
  */
 public class DFSArithmeticEvaluator {
     ParenthesisManager pm = new ParenthesisManager();
@@ -22,9 +26,11 @@ public class DFSArithmeticEvaluator {
 
     public double compute(String expression) {
         double computed = -1;
+        scanner = new Scanner(scannerUtils.getSplitExpression(expression, ops, pm));
+        computed = computeContentBetweenParentheses(true);
         try {
-            scanner = new Scanner(scannerUtils.getSplitExpression(expression, ops, pm));
-            computed = computeContentBetweenParentheses(true);
+            // scanner = new Scanner(scannerUtils.getSplitExpression(expression, ops, pm));
+            // computed = computeContentBetweenParentheses(true);
         } catch (RuntimeException e) {
             e.printStackTrace();
         } finally {
@@ -41,7 +47,7 @@ public class DFSArithmeticEvaluator {
             pm.push();
         }
 
-        double ret = computeGELevel(ops.lowestOperatorLevel());
+        double ret = computeGEPrecedence6();
 
         if (!isGlobalComputation) {
             // assert next is right parenthesis
@@ -61,37 +67,58 @@ public class DFSArithmeticEvaluator {
         return ret;
     }
 
-    
-    // TODO
-    //   support more operators, 
-    //   now this function only supports operators that with 2 operand, 
-    //     to make it flexible, 
-    //     write different codes for different level, 
-    //     one level, one function
-    // 
-    // any equal or higher level computation is computed
-    // example
-    //   compute equal or higher level comparing to *
-    //     ... + a * (..) / ++b * c + ... 
-    //     * / ++ (..) is computed, while + is not computed because it's a lower level
-    private double computeGELevel(int level) {
-        if (level > ops.highestOperatorLevel()) {
-            if (scannerUtils.hasNextParenthesis(scanner, pm)) {
-                if (scannerUtils.hasNextLeftParenthesis(scanner, pm))
-                    return computeContentBetweenParentheses(false);
-                else throw new RuntimeException("unexpected )");
-            }
-            return scannerUtils.nextDouble(scanner);
-        }
+    private double computeGEPrecedence6() {
+        int level = ops.precedenceToLevel(6);
 
-        int higherLevel = level + 1;
-        double ret = computeGELevel(higherLevel);
+        double ret = computeGEPrecedence5();
         while(continueComputation(level)) {
             // assert the op's level is equal to current level
             char op = scannerUtils.nextOperator(scanner, ops);
-            ret = ops.primitiveComputation(ret, op, computeGELevel(higherLevel));
+            ret = ops.primitiveComputation(ret, op, computeGEPrecedence5());
         }
         return ret;
+    }
+
+    private double computeGEPrecedence5() {
+        int level = ops.precedenceToLevel(5);
+
+        double ret = computeGEPrecedence3();
+        while(continueComputation(level)) {
+            // assert the op's level is equal to current level
+            char op = scannerUtils.nextOperator(scanner, ops);
+            ret = ops.primitiveComputation(ret, op, computeGEPrecedence3());
+        }
+        return ret;
+    }
+
+    private double computeGEPrecedence3() {
+        int level = ops.precedenceToLevel(3);
+
+        boolean b = true;
+
+        boolean a = ! ! ! b;
+
+        if (scannerUtils.hasNextParenthesis(scanner, pm)) {
+            if (scannerUtils.hasNextLeftParenthesis(scanner, pm))
+                return computeContentBetweenParentheses(false);
+            else throw new RuntimeException("unexpected )");
+        }
+
+        if (scannerUtils.hasNextOperator(scanner, ops)) {
+            char op = scannerUtils.nextOperator(scanner, ops);
+            return ops.primitiveComputation(op, computeGEPrecedence3());
+        }
+
+        return computeGEPrecedence0();
+    }
+
+    private double computeGEPrecedence0() {
+        if (scannerUtils.hasNextParenthesis(scanner, pm)) {
+            if (scannerUtils.hasNextLeftParenthesis(scanner, pm))
+                return computeContentBetweenParentheses(false);
+            else throw new RuntimeException("unexpected )");
+        }
+        return scannerUtils.nextDouble(scanner);
     }
 
     private boolean continueComputation(int currentLevel) {
@@ -144,17 +171,37 @@ class Operators {
         return ret;
     }
 
+    public double primitiveComputation(char op, double n) {
+        double ret = 0;
+        switch (op) {
+            case '-':
+                ret = -1 * n;
+                break;
+        }
+        return ret;
+    }
+
+    public int precedenceToLevel(int precedence) {
+        return 18 - precedence;
+    }
+
+    // TODO redesign
+    //   op - has 2 meaning, minus & negative
+    //   op may have len > 1
     // [C++ Operator Precedence - cppreference](https://en.cppreference.com/w/cpp/language/operator_precedence)
     public int operatorLevel(char op) {
         int ret = -1;
         switch (op) {
             case '+':
             case '-':
-                ret = 1;
+                ret = precedenceToLevel(6);
                 break;
             case '*':
             case '/':
-                ret = 2;
+                ret = precedenceToLevel(5);
+                break;
+            case 'n':  // TODO the negative -
+                ret = precedenceToLevel(3);
                 break;
         }
         return ret;
@@ -171,7 +218,7 @@ class Operators {
     }
 
     public Pattern regexp() {
-        return Pattern.compile("[+\\-*/]");
+        return Pattern.compile("[+\\-*/n]");
     }
 }
 
@@ -351,11 +398,14 @@ class ArithmeticEvaluatorTest {
     String test8 = "(3*(5+2)*(10-7))";
     double expected8 = (3*(5+2)*(10-7));
 
+    String test9 = "-1+2+(-3+4+-5)+6-3- -3";
+    double expected9 = -1+2+(-3+4+-5)+6-3- -3;
+
     public void test() {
         DFSArithmeticEvaluator ae = new DFSArithmeticEvaluator();
 
-        String test = test4;
-        double expected = expected4;
+        String test = test9;
+        double expected = expected9;
 
         double val = ae.compute(test);
         System.out.println(val);
