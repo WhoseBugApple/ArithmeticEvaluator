@@ -24,7 +24,7 @@ public class DFSArithmeticEvaluator {
         double computed = -1;
         try {
             scanner = new Scanner(scannerUtils.getSplitExpression(expression, ops, pm));
-            computed = getComputedBetweenParentheses(true);
+            computed = computeContentBetweenParentheses(true);
         } catch (RuntimeException e) {
             e.printStackTrace();
         } finally {
@@ -32,7 +32,7 @@ public class DFSArithmeticEvaluator {
         }
     }
 
-    private double getComputedBetweenParentheses(boolean isGlobalComputation) {
+    private double computeContentBetweenParentheses(boolean isGlobalComputation) {
         if (!isGlobalComputation) {
             // assert next is left parenthesis
             if (!scannerUtils.hasNextLeftParenthesis(scanner, pm))
@@ -78,7 +78,7 @@ public class DFSArithmeticEvaluator {
         if (level > ops.highestOperatorLevel()) {
             if (scannerUtils.hasNextParenthesis(scanner, pm)) {
                 if (scannerUtils.hasNextLeftParenthesis(scanner, pm))
-                    return getComputedBetweenParentheses(false);
+                    return computeContentBetweenParentheses(false);
                 else throw new RuntimeException("unexpected )");
             }
             return scannerUtils.nextDouble(scanner);
