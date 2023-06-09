@@ -349,9 +349,7 @@ class ScannerUtils {
         } else if (scanner.hasNextInt()) {
             return scanner.nextInt();
         } else {
-            // throw Exception
-            scanner.nextDouble();
-            return -1;
+            throw new RuntimeException("expect a number, while not found");
         }
     }
 
