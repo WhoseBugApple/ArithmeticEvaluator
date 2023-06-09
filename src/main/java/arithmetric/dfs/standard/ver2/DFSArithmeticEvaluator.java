@@ -26,11 +26,9 @@ public class DFSArithmeticEvaluator {
 
     public double compute(String expression) {
         double computed = -1;
-        scanner = new Scanner(scannerUtils.getSplitExpression(expression, ops, pm));
-        computed = computeContentBetweenParentheses(true);
         try {
-            // scanner = new Scanner(scannerUtils.getSplitExpression(expression, ops, pm));
-            // computed = computeContentBetweenParentheses(true);
+            scanner = new Scanner(scannerUtils.getSplitExpression(expression, ops, pm));
+            computed = computeContentBetweenParentheses(true);
         } catch (RuntimeException e) {
             e.printStackTrace();
         } finally {
@@ -93,10 +91,6 @@ public class DFSArithmeticEvaluator {
 
     private double computeGEPrecedence3() {
         int level = ops.precedenceToLevel(3);
-
-        boolean b = true;
-
-        boolean a = ! ! ! b;
 
         if (scannerUtils.hasNextParenthesis(scanner, pm)) {
             if (scannerUtils.hasNextLeftParenthesis(scanner, pm))
@@ -181,6 +175,7 @@ class Operators {
         return ret;
     }
 
+    // [C++ Operator Precedence - cppreference](https://en.cppreference.com/w/cpp/language/operator_precedence)
     public int precedenceToLevel(int precedence) {
         return 18 - precedence;
     }
@@ -203,6 +198,8 @@ class Operators {
             case 'n':  // TODO the negative -
                 ret = precedenceToLevel(3);
                 break;
+            default:
+                throw new RuntimeException("not supported operator");
         }
         return ret;
     }
@@ -398,8 +395,8 @@ class ArithmeticEvaluatorTest {
     String test8 = "(3*(5+2)*(10-7))";
     double expected8 = (3*(5+2)*(10-7));
 
-    String test9 = "-1+2+(-3+4+-5)+6-3- -3";
-    double expected9 = -1+2+(-3+4+-5)+6-3- -3;
+    String test9 = "-1+2+(1)-(-3+4+-5)+6-3- -3";
+    double expected9 = -1+2+(1)-(-3+4+-5)+6-3- -3;
 
     public void test() {
         DFSArithmeticEvaluator ae = new DFSArithmeticEvaluator();
