@@ -4,26 +4,28 @@ import java.util.Scanner;
 import java.util.regex.Pattern;
 
 /*
- Some Terms
-     op -> operator
-     first    op    second -->-->--|
-     ------<---<---<---<---<-------|
-     |
-     first                       op  second
+Some Terms
+    op -> operator
+    first    op    second -->-->--|
+    ------<---<---<---<---<-------|
+    |
+    first                       op  second
 
-     left       right
-     A          A's friend
-     (  () ()   )
+    left       right
+    A          A's friend
+    (  () ()   )
+Say it's dynamic step because
+    * <p> ...        * 3 ++ ++ ++         + 1 * 1 * 1 * 1 * 1 * 1 * 1          + ... </p>
+                     step one             step two
+    the step one ends when meet op that equal or greater than * , 
+    however, 
+    the step two ends when meet op that equal or greater than + , 
+    the condition is different
 */
 
 /**
  * <h1>Intent</h1>
  * <p>evaluate a String arithmetic expression, all number will be recognized as double</p>
- *
- * <h1>What is dynamic step</h1>
- * <p> 1 + 2*3*4 + 5</p>
- * <p>I jump from 1, to 2*3*4, jump down to 2, 3, 4, jump up to 5</p>
- * <p>the expression, from start to where I am, is computed</p>
  *
  * <h1>Only for operators with 2 operand</h1>
  * <p> as title </p>
