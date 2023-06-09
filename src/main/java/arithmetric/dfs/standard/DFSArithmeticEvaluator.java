@@ -89,7 +89,7 @@ public class DFSArithmeticEvaluator {
         while(continueComputation(level)) {
             // assert the op's level is equal to current level
             char op = scannerUtils.nextOperator(scanner, ops);
-            ret = ops.primitiveComputation(ret, computeGELevel(higherLevel), op);
+            ret = ops.primitiveComputation(ret, op, computeGELevel(higherLevel));
         }
         return ret;
     }
@@ -125,7 +125,7 @@ class Operators {
         return false;
     }
 
-    public double primitiveComputation(double n1, double n2, char op) {
+    public double primitiveComputation(double n1, char op, double n2) {
         double ret = 0;
         switch (op) {
             case '+':
