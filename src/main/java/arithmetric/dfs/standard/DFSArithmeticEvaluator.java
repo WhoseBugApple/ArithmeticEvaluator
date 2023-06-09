@@ -61,9 +61,19 @@ public class DFSArithmeticEvaluator {
         return ret;
     }
 
+    
+    // TODO
+    //   support more operators, 
+    //   now this function only supports operators that with 2 operand, 
+    //     to make it flexible, 
+    //     write different codes for different level, 
+    //     one level, one function
+    // 
     // any equal or higher level computation is computed
-    // compute in level */
-    // ... + a * () / ++b * c + ... is computed, + is not computed because it's a lower level
+    // example
+    //   compute equal or higher level comparing to *
+    //     ... + a * (..) / ++b * c + ... 
+    //     * / ++ (..) is computed, while + is not computed because it's a lower level
     private double computeGELevel(int level) {
         if (level > ops.highestOperatorLevel()) {
             if (scannerUtils.hasNextParenthesis(scanner, pm)) {
@@ -290,9 +300,7 @@ class ScannerUtils {
         } else if (scanner.hasNextInt()) {
             return scanner.nextInt();
         } else {
-            // throw Exception
-            scanner.nextDouble();
-            return -1;
+            throw new RuntimeException("expect a number, while not found");
         }
     }
 
