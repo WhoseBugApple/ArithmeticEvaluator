@@ -45,7 +45,7 @@ public class DFSArithmeticEvaluator {
             pm.push();
         }
 
-        double ret = computeGEPrecedence6();
+        double ret = computeLessEqualPrecedence6();
 
         if (!isGlobalComputation) {
             // assert next is right parenthesis
@@ -65,31 +65,31 @@ public class DFSArithmeticEvaluator {
         return ret;
     }
 
-    private double computeGEPrecedence6() {
+    private double computeLessEqualPrecedence6() {
         int level = ops.precedenceToLevel(6);
 
-        double ret = computeGEPrecedence5();
+        double ret = computeLessEqualPrecedence5();
         while(continueComputation(level)) {
             // assert the op's level is equal to current level
             char op = scannerUtils.nextOperator(scanner, ops);
-            ret = ops.primitiveComputation(ret, op, computeGEPrecedence5());
+            ret = ops.primitiveComputation(ret, op, computeLessEqualPrecedence5());
         }
         return ret;
     }
 
-    private double computeGEPrecedence5() {
+    private double computeLessEqualPrecedence5() {
         int level = ops.precedenceToLevel(5);
 
-        double ret = computeGEPrecedence3();
+        double ret = computeLessEqualPrecedence3();
         while(continueComputation(level)) {
             // assert the op's level is equal to current level
             char op = scannerUtils.nextOperator(scanner, ops);
-            ret = ops.primitiveComputation(ret, op, computeGEPrecedence3());
+            ret = ops.primitiveComputation(ret, op, computeLessEqualPrecedence3());
         }
         return ret;
     }
 
-    private double computeGEPrecedence3() {
+    private double computeLessEqualPrecedence3() {
         int level = ops.precedenceToLevel(3);
 
         if (scannerUtils.hasNextParenthesis(scanner, pm)) {
@@ -100,13 +100,13 @@ public class DFSArithmeticEvaluator {
 
         if (scannerUtils.hasNextOperator(scanner, ops)) {
             char op = scannerUtils.nextOperator(scanner, ops);
-            return ops.primitiveComputation(op, computeGEPrecedence3());
+            return ops.primitiveComputation(op, computeLessEqualPrecedence3());
         }
 
-        return computeGEPrecedence0();
+        return computePrecedence0();
     }
 
-    private double computeGEPrecedence0() {
+    private double computePrecedence0() {
         if (scannerUtils.hasNextParenthesis(scanner, pm)) {
             if (scannerUtils.hasNextLeftParenthesis(scanner, pm))
                 return computeContentBetweenParentheses(false);
